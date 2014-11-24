@@ -1,0 +1,203 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+Element providing solution to no problem in particular.
+
+##### Example
+
+    <posh-video></posh-video>
+
+@element posh-video
+@blurb Element providing solution to no problem in particular.
+@status alpha
+@homepage http://polymerlabs.github.io/posh-video
+-->
+<polymer-element name="posh-video" attributes="source useCanvasForDisplay canvasRefreshInterval width height">
+
+  <template>
+
+    <link rel="stylesheet" href="posh-video.css" />
+    <content>
+      <video id="vid" autoplay="true"></video>
+
+      <!-- invisible canvas element to route video to and extract data from -->
+      <canvas id="canvas"></canvas>
+    </content>
+
+  </template>
+
+  <script>
+
+    Polymer({
+        /**
+         * video source file or stream
+         * @attribute source
+         * @type string
+         */
+        source: "",
+
+        /**
+         * determines whether to use the canvas element for display instead of the video element
+         * @attribute useCanvasForDisplay
+         * @type boolean
+         * @default false
+         */
+        useCanvasForDisplay: false,
+
+        /**
+         * refresh interval when using the canvas for display
+         * @attribute canvasRefreshInterval
+         * @type int
+         * @default 250 ms
+         */
+        canvasRefreshInterval: 250,
+
+        /**
+         * width of component
+         * @attribute width
+         * @type int
+         * @default 0
+         */
+        width: 0,
+
+        /**
+         * height of component
+         * @attribute height
+         * @type int
+         * @default 0
+         */
+        height: 0,
+
+        /**
+         * left offset for letterbox of video
+         * @attribute letterBoxLeft
+         * @type int
+         * @default 0
+         */
+        letterBoxLeft: 0,
+
+        /**
+         * top offset for letterbox of video
+         * @attribute letterBoxTop
+         * @type int
+         * @default 0
+         */
+        letterBoxTop: 0,
+
+        /**
+         * update canvas dimensions when resized
+         *
+         * @method: onResize
+         */
+        onResize: function () {
+          this.width = this.offsetWidth;
+          this.height = this.offsetHeight;
+          this.$.vid.setAttribute("width", this.width);
+          this.$.vid.setAttribute("height", this.height);
+        },
+
+        domReady: function () {
+          this.onResize();
+          this.$.vid.onloadedmetadata = function (e) {
+            self.letterBoxTop = (self.height - self.$.vid.videoHeight) / 2;
+            self.letterBoxLeft = (self.width - self.$.vid.videoWidth) / 2;
+          };
+
+          this.$.vid.setAttribute('width', this.width);
+          this.$.vid.setAttribute('height', this.height);
+        },
+
+
+        /**
+         * on component ready
+         */
+        ready: function () {
+          self = this;
+
+          if (this.useCanvasForDisplay) {
+            this.$.vid.style.display = 'none';
+            this.tick = setInterval(function () {
+              self.canvasctx.drawImage(self.$.vid, 0, 0);
+              self.fire('camera-frame-update', self.getCurrentFrameData(null, true));
+            }, this.canvasRefreshInterval);
+          } else {
+            this.$.canvas.style.display = 'none';
+          }
+          this.canvasctx = this.$.canvas.getContext("2d");
+          this.setSource(this.source);
+        },
+
+        attributeChanged: function(param1, param2) {
+          console.log(param1, param2)
+        },
+
+        /**
+         * get canvas context
+         * @method get canvas context for drawing into it
+         * @return {object} canvas context
+         */
+        setSource: function (src) {
+          if (src != "") {
+            this.$.vid.src = src;
+          }
+        },
+
+        /**
+         * get canvas context
+         * @method get canvas context for drawing into it
+         * @return {object} canvas context
+         */
+        getCanvasContext: function () {
+          return this.canvasctx;
+        },
+
+        /**
+         * get image data for current frame
+         *
+         * @method getCurrentFrameData
+         * @param {boolean} data mode (binary or base64)
+         * @param {boolean} do not perform redraw (can be wasteful)
+         * @return {object} image data
+         */
+        getCurrentFrameData: function (mode, noredraw) {
+          if (!mode) {
+            mode = "binary";
+          }
+
+          if (!noredraw) {
+            this.$.canvas.setAttribute('width', this.width);
+            this.$.canvas.setAttribute('height', this.height);
+            this.canvasctx.drawImage(this.$.vid, 0, 0);
+          }
+
+          var data = this.$.canvas.toDataURL("image/png");
+
+          if (mode == "binary") {
+            var base64Data = data.replace('data:image/png;base64', "");
+            var binaryData = new Buffer(base64Data, 'base64');
+            data = binaryData;
+          }
+          // todo: non-binary mode for assigning data to image elements for example
+          return data;
+        },
+
+        /**
+         * save current frame to file
+         *
+         * @method saveCurrentFrameToFile
+         * @param file path
+         * @param image type
+         */
+        saveCurrentFrameToFile: function (pth) {
+          var fs = require('fs');
+          if (!fs) {
+            throw new Error('This method uses Node.js functionality, and you are not running within Node.js');
+          }
+          var data = this.getCurrentFrameData().toString('binary');
+          fs.writeFileSync(pth, data, 'binary');
+        }
+      });
+
+  </script>
+
+</polymer-element>
