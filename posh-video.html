@@ -12,7 +12,7 @@ Element providing solution to no problem in particular.
 @status alpha
 @homepage http://polymerlabs.github.io/posh-video
 -->
-<polymer-element name="posh-video" attributes="source useCanvasForDisplay canvasRefreshInterval width height">
+<polymer-element name="posh-video" attributes="source useCanvasForDisplay canvasRefreshInterval width height scaleX scaleY">
 
   <template>
 
@@ -91,6 +91,22 @@ Element providing solution to no problem in particular.
          * @default 0
          */
         aspectRatio: 0,
+
+        /**
+         * horizontal scale of video compared to original format
+         * @attribute scaleX
+         * @type float
+         * @default 0
+         */
+        scaleX: 0,
+
+        /**
+         * vertical scale of video compared to original format
+         * @attribute scaleY
+         * @type float
+         * @default 0
+         */
+        scaleY: 0,
 
         /**
          * update canvas dimensions when resized
